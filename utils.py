@@ -37,6 +37,39 @@ def process_job(job_id, file_path_or_url):
     job.status = 'completed'
     db.session.commit()
 
+def generate_report(job_id):
+    job = Job.query.get(job_id)
+    features = Feature.query.filter_by(job_id=job_id).all()
+    from collections import Counter
+    feature_counts = Counter([f.feature_type for f in features])
+    report = f"Report for Job {job_id}\n"
+    report += f"Total features found: {len(features)}\n"
+    for ftype, count in feature_counts.items():
+        report += f"{ftype}: {count}\n"
+    report_path = f'/tmp/report_{job_id}.txt'
+    with open(report_path, 'w') as f:
+        f.write(report)
+    return report_path
+
+def deliver_report(job, report_path):
+    import requests
+    import smtplib
+    from email.mime.text import MIMEText
+    output_dest = job.output_destination
+    if output_dest.startswith('http'):  # Assume S3 presigned URL
+        with open(report_path, 'rb') as f:
+            requests.put(output_dest, data=f)
+    elif '@' in output_dest:  # Assume email
+        msg = MIMEText('See attached report', 'plain')
+        msg['Subject'] = f'eDiscovery Report for Job {job.id}'
+        msg['From'] = 'your_email@example.com'
+        msg['To'] = output_dest
+        with open(report_path, 'r') as f:
+            msg.attach(MIMEText(f.read(), 'plain'))
+        with smtplib.SMTP('smtp.example.com', 587) as server:
+            server.starttls()
+            server.login('your_email@example.com', 'your_password')
+            server.send_message(msg)
 
 def parse_feature_files(output_dir, job_id):
     for filename in os.listdir(output_dir):
