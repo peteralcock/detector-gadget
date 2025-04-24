@@ -1,7 +1,72 @@
-
 # Detector Gadget
-eDiscovery for everyone... Hoo-hoooo!
 
+Detector Gadget is an eDiscovery and digital forensics analysis tool to analyze digital artifacts and extract useful information for litigation.
+
+## Features
+
+- Web-based interface for submitting and managing analysis jobs
+- Containerized architecture with Docker and Docker Compose
+- Support for file uploads and remote file URL analysis
+- Visualization of analysis results with interactive charts
+- Background job processing with Celery
+- RSpec testing suite for API endpoints
+- Built using Flask, PostgreSQL, and Redis
+
+## Architecture
+
+The application consists of the following components:
+
+1. **Web Application** (Flask): Handles user authentication, job submission, and result display
+2. **Background Worker** (Celery): Processes jobs asynchronously
+3. **Bulk Extractor** (Docker container): Performs the actual forensic analysis
+4. **Database** (PostgreSQL): Stores user, job, and feature data
+5. **Message Broker** (Redis): Facilitates communication between web app and workers
+
+## Getting Started
+
+### Prerequisites
+
+- Docker and Docker Compose
+- Git
+
+### Installation
+
+1. Clone the repository:
+   ```
+   git clone https://github.com/yourusername/detector-gadget.git
+   cd detector-gadget
+   ```
+
+2. Start the services:
+   ```
+   docker-compose up -d
+   ```
+
+3. Initialize the database:
+   ```
+   curl http://localhost:5000/init_db
+   ```
+
+4. Access the application at http://localhost:5000
+   - Default admin credentials: username `admin` / password `admin`
+
+## Running Tests
+
+The project includes RSpec tests for API endpoints:
+
+```
+rake test            # Run tests against a running application
+rake docker_test     # Start Docker services, run tests, and stop services
+```
+
+## Development
+
+For development, you can mount your local directory into the container:
+
+```
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+```
+ 
 ## Key Improvements
 
 ### 1. Code Structure and Organization
