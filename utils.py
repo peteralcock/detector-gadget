@@ -36,3 +36,19 @@ def process_job(job_id, file_path_or_url):
     deliver_report(job, report_path)
     job.status = 'completed'
     db.session.commit()
+
+
+def parse_feature_files(output_dir, job_id):
+    for filename in os.listdir(output_dir):
+        if filename.endswith('.txt'):
+            feature_type = filename.split('.')[0]
+            with open(os.path.join(output_dir, filename), 'r') as f:
+                for line in f:
+                    parts = line.strip().split('\t')
+                    if len(parts) >= 2:
+                        offset = parts[0]
+                        value = parts[1]
+                        context = parts[2] if len(parts) > 2 else ''
+                        feature = Feature(job_id=job_id, feature_type=feature_type, value=value, offset=offset, context=context)
+                        db.session.add(feature)
+    db.session.commit()
