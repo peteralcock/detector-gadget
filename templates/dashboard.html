@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+</head>
+<body>
+    <h1>Your Analysis Jobs</h1>
+    <table border="1">
+        <tr>
+            <th>Job ID</th>
+            <th>Status</th>
+            <th>Input Source</th>
+            <th>Features</th>
+        </tr>
+        {% for job in jobs %}
+        <tr>
+            <td>{{ job.id }}</td>
+            <td>{{ job.status }}</td>
+            <td>{{ job.input_source }}</td>
+            <td>
+                {% set features = job.features.all() %}
+                Total: {{ features|length }}<br>
+                {% for f in features[:5] %}
+                    {{ f.feature_type }}: {{ f.value }}<br>
+                {% endfor %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
