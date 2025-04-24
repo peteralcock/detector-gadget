@@ -1,0 +1,41 @@
+FROM kalilinux/kali-rolling
+
+# Update and install dependencies
+RUN apt-get update && apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        git \
+        flex \
+        libewf-dev \
+        libssl-dev \
+        automake \
+        autoconf \
+        libtool \
+        zlib1g-dev \
+        wget \
+        ca-certificates \
+        python3 \
+        && rm -rf /var/lib/apt/lists/*
+
+# Clone bulk_extractor repository
+RUN git clone --recursive https://github.com/simsong/bulk_extractor.git /bulk_extractor
+
+# Build bulk_extractor
+WORKDIR /bulk_extractor
+RUN ./bootstrap.sh && \
+    ./configure && \
+    make && \
+    make install
+
+# Clean up to reduce image size
+RUN apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
+    cd / && rm -rf /bulk_extractor
+
+# Create a directory for working with files
+RUN mkdir -p /data
+
+WORKDIR /data
+
+# Default command (will be overridden by compose)
+CMD ["bulk_extractor", "--help"]
