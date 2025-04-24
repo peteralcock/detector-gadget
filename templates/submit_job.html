@@ -1,15 +1,171 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Submit Job</title>
+    <title>Submit Job - Detector Gadget</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .card {
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .card-header {
+            background-color: #f8f9fa;
+            border-radius: 10px 10px 0 0 !important;
+        }
+        .form-check-input:checked {
+            background-color: #343a40;
+            border-color: #343a40;
+        }
+    </style>
 </head>
 <body>
-    <h1>Submit New Analysis Job</h1>
-    <form method="post" enctype="multipart/form-data">
-        <label>File Upload:</label><input type="file" name="file"><br>
-        <label>Or File URL:</label><input type="text" name="url"><br>
-        <label>Output Destination (S3 presigned URL or email):</label><input type="text" name="output_dest"><br>
-        <button type="submit">Submit</button>
-    </form>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">Detector Gadget</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('submit_job') }}">Submit Job</a>
+                    </li>
+                </ul>
+                <div class="navbar-nav">
+                    <a class="nav-link" href="{{ url_for('logout') }}">Logout ({{ current_user.username }})</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1 class="mb-4">Submit New Analysis Job</h1>
+        
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-info alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="card">
+            <div class="card-header">
+                <h5>Job Details</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label">Select Input Source</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="source_type" id="file_source" value="file" checked>
+                            <label class="form-check-label" for="file_source">
+                                File Upload
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="source_type" id="url_source" value="url">
+                            <label class="form-check-label" for="url_source">
+                                Remote URL
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="file_input" class="mb-3">
+                        <label for="file" class="form-label">Upload File</label>
+                        <input type="file" class="form-control" id="file" name="file">
+                        <div class="form-text">Upload a disk image, memory dump, or any file you want to analyze.</div>
+                    </div>
+
+                    <div id="url_input" class="mb-3 d-none">
+                        <label for="url" class="form-label">File URL</label>
+                        <input type="url" class="form-control" id="url" name="url">
+                        <div class="form-text">Enter a URL to a file you want to analyze. The file will be downloaded for processing.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="output_dest" class="form-label">Output Destination</label>
+                        <input type="text" class="form-control" id="output_dest" name="output_dest">
+                        <div class="form-text">Enter an email address to receive the results, or an S3 presigned URL for file upload.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Analysis Options</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="1" id="option_emails" name="option_emails" checked>
+                            <label class="form-check-label" for="option_emails">
+                                Extract Email Addresses
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="1" id="option_ccns" name="option_ccns" checked>
+                            <label class="form-check-label" for="option_ccns">
+                                Extract Credit Card Numbers
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="1" id="option_phones" name="option_phones" checked>
+                            <label class="form-check-label" for="option_phones">
+                                Extract Phone Numbers
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="1" id="option_urls" name="option_urls" checked>
+                            <label class="form-check-label" for="option_urls">
+                                Extract URLs
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="1" id="option_exif" name="option_exif" checked>
+                            <label class="form-check-label" for="option_exif">
+                                Extract EXIF Data
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Submit Job</button>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Toggle file/URL inputs based on selection
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileSource = document.getElementById('file_source');
+            const urlSource = document.getElementById('url_source');
+            const fileInput = document.getElementById('file_input');
+            const urlInput = document.getElementById('url_input');
+            
+            fileSource.addEventListener('change', function() {
+                if (this.checked) {
+                    fileInput.classList.remove('d-none');
+                    urlInput.classList.add('d-none');
+                }
+            });
+            
+            urlSource.addEventListener('change', function() {
+                if (this.checked) {
+                    fileInput.classList.add('d-none');
+                    urlInput.classList.remove('d-none');
+                }
+            });
+        });
+    </script>
 </body>
 </html>
