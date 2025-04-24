@@ -1,5 +1,7 @@
 # Detector Gadget
 
+![Logo](logo.png)
+
 Detector Gadget is an eDiscovery and digital forensics analysis tool that leverages bulk_extractor to identify and extract features from digital evidence. Built with a containerized architecture, it provides a web interface for submitting, processing, and visualizing forensic analysis data.
 
 ![Evidence Statistics](screenshot.png)
