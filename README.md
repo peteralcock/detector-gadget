@@ -1,26 +1,28 @@
 # Detector Gadget
 
-Detector Gadget is an eDiscovery and digital forensics analysis tool to analyze digital artifacts and extract useful information for litigation.
+Detector Gadget is an eDiscovery and digital forensics analysis tool that leverages bulk_extractor to identify and extract features from digital evidence. Built with a containerized architecture, it provides a web interface for submitting, processing, and visualizing forensic analysis data.
+
+![Detector Gadget](https://example.com/detector-gadget-screenshot.png)
 
 ## Features
 
-- Web-based interface for submitting and managing analysis jobs
-- Containerized architecture with Docker and Docker Compose
-- Support for file uploads and remote file URL analysis
-- Visualization of analysis results with interactive charts
-- Background job processing with Celery
-- RSpec testing suite for API endpoints
-- Built using Flask, PostgreSQL, and Redis
+- **Digital Forensics Analysis**: Extract emails, credit card numbers, URLs, and more from digital evidence
+- **Web-based Interface**: Simple dashboard for job submission and results visualization
+- **Data Visualization**: Interactive charts and graphs for analysis results
+- **Asynchronous Processing**: Background job processing with Celery
+- **Containerized Architecture**: Kali Linux container for bulk_extractor and Python container for the web application
+- **Report Generation**: Automated generation and delivery of analysis reports
+- **RESTful API**: JSON API endpoints for programmatic access
 
 ## Architecture
 
-The application consists of the following components:
+Detector Gadget consists of several containerized services:
 
-1. **Web Application** (Flask): Handles user authentication, job submission, and result display
-2. **Background Worker** (Celery): Processes jobs asynchronously
-3. **Bulk Extractor** (Docker container): Performs the actual forensic analysis
-4. **Database** (PostgreSQL): Stores user, job, and feature data
-5. **Message Broker** (Redis): Facilitates communication between web app and workers
+- **Web Application (Flask)**: Handles user authentication, job submission, and results display
+- **Background Worker (Celery)**: Processes analysis jobs asynchronously
+- **Bulk Extractor (Kali Linux)**: Performs the actual forensic analysis
+- **Database (PostgreSQL)**: Stores users, jobs, and extracted features
+- **Message Broker (Redis)**: Facilitates communication between web app and workers
 
 ## Getting Started
 
@@ -31,152 +33,189 @@ The application consists of the following components:
 
 ### Installation
 
-1. Clone the repository:
-   ```
+1. **Clone the repository**
+   ```bash
    git clone https://github.com/yourusername/detector-gadget.git
    cd detector-gadget
    ```
 
-2. Start the services:
-   ```
+2. **Start the services**
+   ```bash
    docker-compose up -d
    ```
 
-3. Initialize the database:
-   ```
+3. **Initialize the database**
+   ```bash
    curl http://localhost:5000/init_db
    ```
 
-4. Access the application at http://localhost:5000
-   - Default admin credentials: username `admin` / password `admin`
+4. **Access the application**
+   
+   Open your browser and navigate to http://localhost:5000
+   
+   Default admin credentials:
+   - Username: `admin`
+   - Password: `admin`
 
-## Running Tests
+## Usage
 
-The project includes RSpec tests for API endpoints:
+### Submitting a Job
 
-```
-rake test            # Run tests against a running application
-rake docker_test     # Start Docker services, run tests, and stop services
-```
+1. Log in to the application
+2. Navigate to "Submit Job"
+3. Upload a file or provide a URL to analyze
+4. Specify an output destination (email or S3 URL)
+5. Submit the job
+
+### Viewing Results
+
+1. Navigate to "Dashboard" to see all jobs
+2. Click on a job to view detailed results
+3. Explore the visualizations and extracted features
 
 ## Development
 
-For development, you can mount your local directory into the container:
+### Running Tests
+
+```bash
+# Install test dependencies
+gem install rspec httparty rack-test
+
+# Run tests against a running application
+rake test
+
+# Or run tests in Docker
+rake docker_test
+```
+
+### Project Structure
 
 ```
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+detector-gadget/
+├── Dockerfile.kali             # Kali Linux with bulk_extractor
+├── Dockerfile.python           # Python application
+├── README.md                   # This file
+├── Rakefile                    # Test tasks
+├── app.py                      # Main Flask application
+├── celery_init.py              # Celery initialization
+├── docker-compose.yml          # Service orchestration
+├── entrypoint.sh               # Container entrypoint
+├── requirements.txt            # Python dependencies
+├── spec/                       # RSpec tests
+│   ├── app_spec.rb             # API tests
+│   ├── fixtures/               # Test fixtures
+│   └── spec_helper.rb          # Test configuration
+├── templates/                  # HTML templates
+│   ├── dashboard.html          # Dashboard view
+│   ├── job_details.html        # Job details view
+│   ├── login.html              # Login form
+│   ├── register.html           # Registration form
+│   └── submit_job.html         # Job submission form
+└── utils.py                    # Utility functions and tasks
 ```
- 
-## Key Improvements
 
-### 1. Code Structure and Organization
+## Customization
 
-- **Fixed imports**: Eliminated circular imports by restructuring the code
-- **Added proper error handling**: Added try/except blocks and logging throughout
-- **Improved database models**: Added timestamps, more fields, and relationships
-- **Enhanced user authentication**: Implemented registration, login, and session management
+### Adding New Feature Extractors
 
-### 2. Docker Configuration
+Modify the `process_job` function in `utils.py` to add new extraction capabilities:
 
-- **Kali Linux container**: Created a proper Dockerfile for bulk_extractor based on Kali Linux
-- **Python application container**: Created a Python container with all necessary dependencies
-- **Docker Compose setup**: Configured all services with proper volumes and networking
-- **Entrypoint script**: Added an entrypoint script for proper initialization
+```python
+def process_job(job_id, file_path_or_url):
+    # ...existing code...
+    
+    # Add custom bulk_extractor parameters
+    client.containers.run(
+        'bulk_extractor_image',
+        command=f'-o /output -e email -e url -e ccn -YOUR_NEW_SCANNER /input/file',
+        volumes={
+            file_path: {'bind': '/input/file', 'mode': 'ro'},
+            output_dir: {'bind': '/output', 'mode': 'rw'}
+        },
+        remove=True
+    )
+    
+    # ...existing code...
+```
 
-### 3. UI/UX Improvements
+### Configuring Email Delivery
 
-- **Modern dashboard**: Redesigned the dashboard with Bootstrap and charts
-- **Interactive job details**: Added detailed views for jobs with feature breakdowns
-- **Form improvements**: Enhanced the job submission form with better UI
-- **Data visualization**: Added Chart.js for data visualization
+Set these environment variables in `docker-compose.yml`:
 
-### 4. Feature Improvements
+```yaml
+environment:
+  - SMTP_HOST=smtp.your-provider.com
+  - SMTP_PORT=587
+  - SMTP_USER=your-username
+  - SMTP_PASS=your-password
+  - SMTP_FROM=noreply@your-domain.com
+```
 
-- **Enhanced job processing**: Improved file handling and error recovery
-- **Better report generation**: Added detailed reports with statistics
-- **API endpoints**: Added JSON API endpoints for retrieving job data
-- **Visualization components**: Created React components for data visualization
+## Production Deployment
 
-### 5. Testing
+For production environments:
 
-- **RSpec tests**: Added comprehensive tests for all API endpoints
-- **Test fixtures**: Created sample fixtures for testing
-- **Rake tasks**: Added convenience tasks for running tests locally or in Docker
+1. **Update secrets**:
+   - Generate a strong `SECRET_KEY`
+   - Change default database credentials
+   - Use environment variables for sensitive information
 
-## Files Created or Modified
+2. **Configure TLS/SSL**:
+   - Set up a reverse proxy (Nginx, Traefik)
+   - Configure SSL certificates
 
-### Docker Configuration
-- `Dockerfile.python`: Python application container
-- `Dockerfile.kali`: Kali Linux container with bulk_extractor
-- `docker-compose.yml`: Service orchestration
-- `entrypoint.sh`: Container initialization
+3. **Backups**:
+   - Set up regular database backups
 
-### Core Application
-- `app.py`: Main Flask application (fixed)
-- `utils.py`: Utility functions and Celery tasks (fixed)
-- `celery_init.py`: Celery worker initialization
-- `requirements.txt`: Python dependencies
+4. **Monitoring**:
+   - Implement monitoring for application health
 
-### Templates
-- `templates/dashboard.html`: Main dashboard with charts
-- `templates/job_details.html`: Detailed job view
-- `templates/login.html`: User login page
-- `templates/register.html`: User registration page
-- `templates/submit_job.html`: Job submission form
+## Security Considerations
 
-### Testing
-- `spec/app_spec.rb`: RSpec tests for API endpoints
-- `spec/spec_helper.rb`: Test configuration
-- `Rakefile`: Rake tasks for testing
-
-### Visualization
-- React component: Feature distribution visualization
-
-### Documentation
-- `README.md`: Project documentation
-
-## Technical Implementation Details
-
-### Authentication System
-- Uses Flask-Login for session management
-- Passwords are securely hashed using Werkzeug's password hashing
+- All user-supplied files are processed in isolated containers
+- Passwords are securely hashed with Werkzeug's password hashing
 - Protected routes require authentication
+- Input validation is performed on all user inputs
 
-### Job Processing Pipeline
-1. User submits a job through the web interface
-2. Job is stored in PostgreSQL and queued with Celery
-3. Celery worker picks up the job and processes it
-4. bulk_extractor is run in a Docker container for forensic analysis
-5. Results are parsed and stored in the database
-6. Reports are generated and delivered
+## Future Development
 
-### Data Visualization
-- Uses Chart.js for interactive charts
-- Features both pie charts and bar charts for data visualization
-- React component for advanced visualizations
+- User roles and permissions
+- Advanced search capabilities
+- PDF report generation
+- Timeline visualization
+- Case management
+- Additional forensic tools
 
-### Security Considerations
-- User authentication with password hashing
-- Input validation for all user inputs
-- Proper error handling to prevent information leakage
-- Docker isolation for processing untrusted files
+## Troubleshooting
 
-## Next Steps
+### Common Issues
 
-1. **Add more scanners**: Integrate additional forensic tools
-2. **Implement user roles**: Add admin and analyst roles
-3. **Improve reporting**: Add PDF report generation
-4. **Add file preview**: Add ability to preview file contents
-5. **Implement case management**: Group jobs into cases for better organization
+**Bulk Extractor container fails to start**
+```bash
+# Check container logs
+docker logs detector-gadget_bulk_extractor_1
 
-6. ## Issues
+# Rebuild the container
+docker-compose build --no-cache bulk_extractor
+```
 
-The original code had several issues that needed to be addressed:
+**Database connection issues**
+```bash
+# Ensure PostgreSQL is running
+docker-compose ps db
 
-1. **Circular imports**: The `process_job` Celery task was defined in utils.py but imported in app.py
-2. **Missing imports**: Some modules like `os` were imported inside functions rather than at the module level
-3. **Incomplete login system**: Missing routes for user authentication
-4. **Missing user_loader decorator**: Required for Flask-Login to function properly
-5. **Docker configuration issues**: No proper configuration for the main application or bulk_extractor
-6. **Lack of error handling**: No proper error handling in the job processing flow
-7. **No visualization**: No charting or visualization capabilities
+# Check connection parameters
+docker-compose exec web env | grep DATABASE_URL
+```
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgements
+
+- [Bulk Extractor](https://github.com/simsong/bulk_extractor) - Digital forensics tool
+- [Flask](https://flask.palletsprojects.com/) - Web framework
+- [Celery](https://docs.celeryproject.org/) - Task queue
+- [Chart.js](https://www.chartjs.org/) - JavaScript charting library
+- [Bootstrap](https://getbootstrap.com/) - CSS framework
