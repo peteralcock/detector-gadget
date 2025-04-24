@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Submit Job</title>
+</head>
+<body>
+    <h1>Submit New Analysis Job</h1>
+    <form method="post" enctype="multipart/form-data">
+        <label>File Upload:</label><input type="file" name="file"><br>
+        <label>Or File URL:</label><input type="text" name="url"><br>
+        <label>Output Destination (S3 presigned URL or email):</label><input type="text" name="output_dest"><br>
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>
