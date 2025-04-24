@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  # Web application
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.python
+    command: web
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./:/app
+      - temp-data:/tmp
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_DEBUG=True
+      - SECRET_KEY=development_secret_key_change_in_production
+      - DATABASE_URL=postgresql://user:password@db/ediscovery
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - SMTP_HOST=smtp.example.com
+      - SMTP_PORT=587
+      - SMTP_USER=user
+      - SMTP_PASS=password
+      - SMTP_FROM=noreply@example.com
+    depends_on:
+      - db
+      - redis
+      - bulk_extractor
+    networks:
+      - app-network
+
+  # Celery worker
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.python
+    command: worker
+    volumes:
+      - ./:/app
+      - temp-data:/tmp
+    environment:
+      - DATABASE_URL=postgresql://user:password@db/ediscovery
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - SMTP_HOST=smtp.example.com
+      - SMTP_PORT=587
+      - SMTP_USER=user
+      - SMTP_PASS=password
+      - SMTP_FROM=noreply@example.com
+    depends_on:
+      - db
+      - redis
+      - bulk_extractor
+    networks:
+      - app-network
+
+  # Bulk Extractor service
+  bulk_extractor:
+    build:
+      context: .
+      dockerfile: Dockerfile.kali
+    image: bulk_extractor_image
+    volumes:
+      - temp-data:/tmp
+    networks:
+      - app-network
+    command: tail -f /dev/null  # Keep container running
+
+  # PostgreSQL database
+  db:
+    image: postgres:13
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=ediscovery
+    networks:
+      - app-network
+
+  # Redis for Celery
+  redis:
+    image: redis:6
+    networks:
+      - app-network
+
+volumes:
+  postgres-data:
+  temp-data:
+
+networks:
+  app-network:
