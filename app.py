@@ -35,6 +35,13 @@ class Feature(db.Model):
     offset = db.Column(db.BigInteger)
     context = db.Column(db.Text)
 
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    jobs = Job.query.filter_by(user_id=current_user.id).all()
+    return render_template('dashboard.html', jobs=jobs)
+
+
 @app.route('/submit_job', methods=['GET', 'POST'])
 @login_required
 def submit_job():
