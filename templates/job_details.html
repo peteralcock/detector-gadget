@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Job Details - Detector Gadget</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <!-- DataTables -->
+    <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <style>
+        .chart-container {
+            height: 400px;
+            margin-bottom: 20px;
+        }
+        .status-pending { color: #f39c12; }
+        .status-processing { color: #3498db; }
+        .status-completed { color: #2ecc71; }
+        .status-failed { color: #e74c3c; }
+        .status-completed_with_errors { color: #f1c40f; }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">Detector Gadget</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('submit_job') }}">Submit Job</a>
+                    </li>
+                </ul>
+                <div class="navbar-nav">
+                    <a class="nav-link" href="{{ url_for('logout') }}">Logout ({{ current_user.username }})</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item active">Job #{{ job.id }}</li>
+            </ol>
+        </nav>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Job Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Job ID:</strong> {{ job.id }}</p>
+                        <p><strong>Status:</strong> <span class="status-{{ job.status }}">{{ job.status }}</span></p>
+                        <p><strong>Input Source:</strong> {{ job.input_source }}</p>
+                        <p><strong>Output Destination:</strong> {{ job.output_destination }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Created:</strong> {{ job.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                        <p><strong>Total Features Found:</strong> {{ features|length }}</p>
+                        <p><strong>Feature Types:</strong> {{ feature_types|length }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Feature Distribution</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="featureDistribution"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Features Found</h5>
+            </div>
+            <div class="card-body">
+                <ul class="nav nav-tabs" id="featureTabs" role="tablist">
+                    {% for feature_type in feature_types %}
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {% if loop.first %}active{% endif %}" 
+                                id="{{ feature_type }}-tab" 
+                                data-bs-toggle="tab" 
+                                data-bs-target="#{{ feature_type }}" 
+                                type="button" 
+                                role="tab">
+                            {{ feature_type }} 
+                            <span class="badge bg-secondary">{{ features|selectattr('feature_type', 'equalto', feature_type)|list|length }}</span>
+                        </button>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <div class="tab-content mt-3" id="featureTabsContent">
+                    {% for feature_type in feature_types %}
+                    <div class="tab-pane fade {% if loop.first %}show active{% endif %}" id="{{ feature_type }}" role="tabpanel">
+                        <table class="table table-striped feature-table">
+                            <thead>
+                                <tr>
+                                    <th>Value</th>
+                                    <th>Offset</th>
+                                    <th>Context</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for feature in features %}
+                                {% if feature.feature_type == feature_type %}
+                                <tr>
+                                    <td>{{ feature.value }}</td>
+                                    <td>{{ feature.offset }}</td>
+                                    <td>{% if feature.context %}<pre>{{ feature.context }}</pre>{% endif %}</td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // Initialize DataTables
+            $('.feature-table').DataTable({
+                pageLength: 10,
+                order: [[0, 'asc']]
+            });
+
+            // Feature Distribution Chart
+            var featureTypes = [
+                {% for feature_type in feature_types %}
+                '{{ feature_type }}',
+                {% endfor %}
+            ];
+            var featureCounts = [
+                {% for feature_type in feature_types %}
+                {{ features|selectattr('feature_type', 'equalto', feature_type)|list|length }},
+                {% endfor %}
+            ];
+
+            // Generate colors for the chart
+            function generateColors(count) {
+                var colors = [];
+                var hueStep = 360 / count;
+                for (var i = 0; i < count; i++) {
+                    var hue = i * hueStep;
+                    colors.push('hsl(' + hue + ', 70%, 60%)');
+                }
+                return colors;
+            }
+
+            var colors = generateColors(featureTypes.length);
+
+            var ctx = document.getElementById('featureDistribution').getContext('2d');
+            var chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: featureTypes,
+                    datasets: [{
+                        label: 'Feature Counts',
+                        data: featureCounts,
+                        backgroundColor: colors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Add event listener for tab changes to redraw DataTables
+            $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+                $($.fn.dataTable.tables(true)).DataTable().columns.adjust();
+            });
+        });
+    </script>
+</body>
+</html>
