@@ -1,3 +1,69 @@
+## Summary of the Terraform Infrastructure
+
+Entity discovery, relationship analysis, and visualization of connections between various data points.
+
+### Key Components
+
+1. **S3 Buckets**
+   - **Evidence Bucket**: For storing uploaded evidence files
+   - **Reports Bucket**: For storing generated reports and relationship graphs
+   - **Artifacts Bucket**: For storing intermediate analysis artifacts
+
+2. **Elasticsearch Domain**
+   - Configured for entity storage and relationship analysis
+   - Includes indices for entities and their relationships
+   - Secured with TLS encryption and authentication
+
+3. **Lambda Functions**
+   - **Entity Processor**: Analyzes uploaded evidence files, extracts entities, and indexes them to Elasticsearch
+   - **POI Graph Generator**: Creates network visualizations of entity relationships using NetworkX
+
+4. **Container Infrastructure**
+   - ECS Cluster with Fargate for running the web application and workers
+   - ECR repositories for storing Docker images
+   - Application Load Balancer for web access
+
+5. **Databases**
+   - RDS PostgreSQL for application data
+   - ElastiCache Redis for Celery task queue
+
+### Entity Analysis Features
+
+The Terraform setup includes sophisticated entity analysis capabilities:
+
+1. **Entity Extraction**
+   - Emails, phone numbers, credit cards, usernames, domains, etc.
+   - Context extraction with surrounding text
+
+2. **Sentiment Analysis**
+   - Uses NLTK to determine sentiment between entities
+   - Categorizes relationships as positive, negative, or neutral
+
+3. **Relationship Detection**
+   - Discovers connections between different entity types
+   - Measures relationship strength based on co-occurrence
+
+4. **Visualization**
+   - Network graphs of entity relationships
+   - Community detection to identify clusters
+   - Centrality measures to find key entities
+
+5. **Reports**
+   - Generates formatted reports in S3
+   - Creates visual network graphs showing connections
+
+### Security Considerations
+
+The infrastructure is designed with security in mind:
+- All S3 buckets have server-side encryption
+- Elasticsearch domain has encryption at rest and in transit
+- All services run within a VPC with proper security groups
+- IAM roles with least privilege access
+- Credentials stored in AWS Secrets Manager
+
+This Terraform configuration provides a complete solution for deploying a scalable entity relationship analysis platform that can help discover connections between entities in large datasets, making it ideal for eDiscovery, fraud detection, or intelligence analysis.
+
+
 # Detector Gadget - Terraform Deployment
 
 This directory contains Terraform configuration for deploying the Detector Gadget eDiscovery and entity relationship analysis platform on AWS.
